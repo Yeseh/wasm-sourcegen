@@ -16,8 +16,42 @@ MonoArray* mono_wasm_typed_array_new(void* arr, int length) {
 __attribute__((__import_module__("env"), __import_name__("hello")))
 extern void __wasm_import_env_hello();
 
+MonoMethod* method_HelloFrom;
+MonoMethod* method_StringParam;
 MonoMethod* method_ArrayParam;
+MonoMethod* method_ObjectParam;
+MonoMethod* method_ThisContext;
 
+
+__attribute__((export_name("hello")))
+MonoObject* __wasm_export_hello_from() {
+    if(!method_HelloFrom) {
+        method_HelloFrom = lookup_dotnet_method("guest.dll", "guest", "Program", "HelloFrom", -1);
+        assert(method_HelloFrom);
+    }
+    
+    MonoObject* exception;
+    void* method_params[] = {  };
+    MonoObject* res = mono_wasm_invoke_method(method_HelloFrom, NULL, method_params, &exception);
+    assert(!exception);
+    
+    return res;
+}
+
+__attribute__((export_name("string_param")))
+MonoObject* __wasm_export_string_param(char* name) {
+    if(!method_StringParam) {
+        method_StringParam = lookup_dotnet_method("guest.dll", "guest", "Program", "StringParam", -1);
+        assert(method_StringParam);
+    }
+    MonoString* name_trans = mono_wasm_string_from_js(name);
+    MonoObject* exception;
+    void* method_params[] = { name_trans };
+    MonoObject* res = mono_wasm_invoke_method(method_StringParam, NULL, method_params, &exception);
+    assert(!exception);
+    free(name);
+    return res;
+}
 
 __attribute__((export_name("array_param")))
 MonoObject* __wasm_export_array_param(char* name,void* nrs_ptr, int nrs_len) {
@@ -30,6 +64,36 @@ MonoObject* __wasm_export_array_param(char* name,void* nrs_ptr, int nrs_len) {
     MonoObject* exception;
     void* method_params[] = { name_trans,nrs_trans };
     MonoObject* res = mono_wasm_invoke_method(method_ArrayParam, NULL, method_params, &exception);
+    assert(!exception);
+    free(name);
+    return res;
+}
+
+__attribute__((export_name("object_param")))
+MonoObject* __wasm_export_object_param(MonoObject* klass) {
+    if(!method_ObjectParam) {
+        method_ObjectParam = lookup_dotnet_method("guest.dll", "guest", "Program", "ObjectParam", -1);
+        assert(method_ObjectParam);
+    }
+    
+    MonoObject* exception;
+    void* method_params[] = { klass };
+    MonoObject* res = mono_wasm_invoke_method(method_ObjectParam, NULL, method_params, &exception);
+    assert(!exception);
+    
+    return res;
+}
+
+__attribute__((export_name("this_context")))
+MonoObject* __wasm_export_this_context(MonoObject* dotnet_target_instance,char* name) {
+    if(!method_ThisContext) {
+        method_ThisContext = lookup_dotnet_method("guest.dll", "guest", "OtherClass", "ThisContext", -1);
+        assert(method_ThisContext);
+    }
+    MonoString* name_trans = mono_wasm_string_from_js(name);
+    MonoObject* exception;
+    void* method_params[] = { name_trans };
+    MonoObject* res = mono_wasm_invoke_method(method_ThisContext, dotnet_target_instance, method_params, &exception);
     assert(!exception);
     free(name);
     return res;
