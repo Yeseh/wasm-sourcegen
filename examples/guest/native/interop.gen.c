@@ -14,8 +14,8 @@ MonoArray* mono_wasm_typed_array_new(void* arr, int length) {
     return buffer;
 }
 
-__attribute__((__import_module__("env"), __import_name__("hello")))
-extern void __wasm_import_env_hello();
+__attribute__((__import_module__("Microsoft.CodeAnalysis.TypedConstant"), __import_name__("Microsoft.CodeAnalysis.TypedConstant")))
+extern void __wasm_import_microsoft._code_analysis._typed_constant_hello();
 
 MonoMethod* method_HelloFrom;
 MonoMethod* method_StringParam;
@@ -24,7 +24,7 @@ MonoMethod* method_StringParam;
 __attribute__((export_name("hello")))
 MonoObject* __wasm_export_hello_from() {
     if(!method_HelloFrom) {
-        method_HelloFrom = lookup_dotnet_method("SourceGenExample.dll", "ConsoleApp", "Program", "HelloFrom", -1);
+        method_HelloFrom = lookup_dotnet_method("guest.dll", "guest", "Program", "HelloFrom", -1);
         assert(method_HelloFrom);
     }
     
@@ -43,7 +43,7 @@ MonoObject* __wasm_export_hello_from() {
 __attribute__((export_name("string_param")))
 MonoObject* __wasm_export_string_param(char* name) {
     if(!method_StringParam) {
-        method_StringParam = lookup_dotnet_method("SourceGenExample.dll", "ConsoleApp", "Program", "StringParam", -1);
+        method_StringParam = lookup_dotnet_method("guest.dll", "guest", "Program", "StringParam", -1);
         assert(method_StringParam);
     }
     
@@ -65,5 +65,5 @@ void fake_settimeout(int timeout) {
 
 void attach_internal_calls() {
     mono_add_internal_call("System.Threading.TimerQueue::SetTimeout", fake_settimeout);
-    mono_add_internal_call("ConsoleApp.Interop::Hello", __wasm_import_env_hello);
+    mono_add_internal_call("guest.Interop::Hello", __wasm_import_microsoft._code_analysis._typed_constant_hello);
 }

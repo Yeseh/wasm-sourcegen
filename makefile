@@ -1,15 +1,21 @@
 .PHONY: run
-run: build
-	dotnet run --project SourceGenHost/SourceGenHost.csproj
+run: build-all
+	dotnet run --project examples/host-wasmtime/host-wasmtime.csproj
+
+.PHONY: build-all
+build-all: build build-example
+
+.PHONY: build-example
+build-example: guest host
 
 .PHONY: build
-build: genlib gen guest host 
+build: genlib gen
 
 genlib:
-	dotnet build ./Wasi.SourceGenerator
+	dotnet build Wasm.SourceGen
 gen: 
-	dotnet build ./Wasi.SourceGenerator.Analyzers
+	dotnet build Wasm.SourceGen.Analyzers
 guest: 
-	dotnet build ./SourceGenExample --no-incremental
+	dotnet build examples/guest/guest.csproj --no-incremental
 host: 
-	dotnet build ./SourceGenHost
+	dotnet build examples/host-wastmtime/host-wasmtime.csproj

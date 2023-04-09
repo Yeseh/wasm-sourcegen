@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System;
 using System.Diagnostics;
 
-namespace Wasi.SourceGenerator
+namespace Wasm.SourceGen.Analyzers
 {
     class WasiMethod
     {
@@ -114,9 +114,9 @@ namespace Wasi.SourceGenerator
             { "array", "MonoArray* {0}_dotnet_array = {0}_ptr ? mono_wasm_typed_array({0}_ptr, {0}_len) : NULL" }
         };
 
-        const string WasiExportAttributeName = "WasiExportAttribute";
+        const string WasiExportAttributeName = "ExportAttribute";
 
-        const string WasiImportAttributeName = "WasiImportAttribute";
+        const string WasiImportAttributeName = "ImportAttribute";
 
         class WasiMethodSyntaxReceiver : ISyntaxContextReceiver
         {
@@ -161,11 +161,8 @@ namespace Wasi.SourceGenerator
                     else if (importAttribute != null) 
                     { 
                         wasiMethod.Type = MethodType.Import; 
-                        wasiMethod.WasmNamespace = importAttribute.ConstructorArguments[0].ToString();
-                        wasiMethod.WasmModule = importAttribute.ConstructorArguments[1].ToString();
-                        wasiMethod.WasmFunctionName = importAttribute.ConstructorArguments[2].ToString();
-
-                        var func = importAttribute.ConstructorArguments[2].ToString();
+                        wasiMethod.WasmModule = importAttribute.ConstructorArguments[0].ToString();
+                        wasiMethod.WasmFunctionName = importAttribute.ConstructorArguments[1].ToString();
                     }
 
                     foreach (var param in methodDeclaration.ParameterList.Parameters)
@@ -190,10 +187,10 @@ namespace Wasi.SourceGenerator
             var imports = methods.Where(m => m.Type == MethodType.Import);
             var exports = methods.Where(m => m.Type == MethodType.Export);
 
-            var internalCalls = new List<string>();
-            var importDecls = new List<string>();
-            var exportDecls = new List<string>();
-            var exportPointers = new List<string>();
+            var internalCalls = new List<string>(imports.Count());
+            var importDecls = new List<string>(imports.Count());
+            var exportDecls = new List<string>(exports.Count());
+            var exportPointers = new List<string>(exports.Count());
 
             foreach (var method in methods)
             {
@@ -243,7 +240,6 @@ void attach_internal_calls() {{
 ";
 
             var outputDir = Path.Combine(Path.GetDirectoryName(context.Compilation.SyntaxTrees.First().FilePath), "native");
-            var filePath = Path.Combine(outputDir, "interop.gen.c");
             if (!Directory.Exists(outputDir))
             {
                 Directory.CreateDirectory(outputDir);

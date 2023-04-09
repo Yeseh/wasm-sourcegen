@@ -1,6 +1,6 @@
 ﻿using Wasmtime;
 
-namespace Wasi.SourceGenerator;
+namespace Wasm.SourceGen;
 
 public static class WasmtimeUtils 
 {
@@ -9,7 +9,9 @@ public static class WasmtimeUtils
         var mem = instance.GetMemory("memory");
         var wasmMalloc = instance.GetFunction<int, int>("malloc");
         if (wasmMalloc == null || mem == null) 
-        { throw new Exception("Missing 'malloc' and/or 'memory' export in instance."); }
+        { 
+            throw new Exception("Missing 'malloc' and/or 'memory' export in instance."); 
+        }
 
         var len = value.Length;
         var start = wasmMalloc.Invoke(len);

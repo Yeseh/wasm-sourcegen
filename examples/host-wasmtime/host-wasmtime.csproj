@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Wasi.SourceGenerator\Wasi.SourceGenerator.csproj"/>
+    <ProjectReference Include="..\..\Wasm.SourceGen\Wasm.SourceGen.csproj"/>
   </ItemGroup>
 
   <ItemGroup>

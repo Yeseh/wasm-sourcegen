@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
-using Wasi.SourceGenerator;
+using Wasm.SourceGen;
 
-namespace ConsoleApp;
+namespace guest;
 
 partial class Program
 {
@@ -10,14 +10,14 @@ partial class Program
         Console.WriteLine("Hello from _start!");
     }
 
-    [WasiExport("hello")]
+    [Export("hello")]
     public static int HelloFrom()
     {
         Console.WriteLine("Hello from WASI");
         return 1;
     }
     
-    [WasiExport("string_param")]
+    [Export("string_param")]
     public static int StringParam(string name)
     {
         Console.WriteLine($"Hello {name}, from WASI");
@@ -29,6 +29,6 @@ public static class Interop
 {
 
     [MethodImpl(MethodImplOptions.InternalCall)]
-    [WasiImport("bla", "env", "hello")]
+    [Import("env", "hello")]
     public static extern void Hello();
 }

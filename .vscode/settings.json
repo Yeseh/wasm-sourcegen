@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "**/.azure-pipelines/**/*.yaml": "azure-pipelines",
+        "**/.azure-pipelines/**/*.yml": "azure-pipelines",
+        "string.h": "c"
+    }
+}

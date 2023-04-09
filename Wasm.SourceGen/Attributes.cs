@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Wasi.SourceGenerator;
+﻿namespace Wasm.SourceGen;
 
 [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-public class WasiExportAttribute : Attribute
+public class ExportAttribute : Attribute
 {
     public string Function { get;  }
 
-    public WasiExportAttribute(string functionName)
+    public ExportAttribute(string functionName)
     {
         this.Function = functionName;
         
@@ -21,17 +17,14 @@ public class WasiExportAttribute : Attribute
 }
 
 [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-public class WasiImportAttribute : Attribute
+public class ImportAttribute : Attribute
 {
-    public string Namespace { get; }
-    
     public string Module { get; }
 
     public string Function { get;  }
 
-    public WasiImportAttribute(string nameSpace, string module, string functionName)
+    public ImportAttribute(string module, string functionName)
     {
-        this.Namespace = nameSpace;
         this.Module = module;
         this.Function = functionName;
 

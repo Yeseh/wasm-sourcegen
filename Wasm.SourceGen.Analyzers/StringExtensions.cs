@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Wasi.SourceGenerator
+namespace Wasm.SourceGen
 {
     internal static class StringExtensions
     {

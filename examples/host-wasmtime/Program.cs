@@ -1,7 +1,6 @@
-﻿using System.Text;
-using Wasmtime;
+﻿using Wasmtime;
 
-using static Wasi.SourceGenerator.WasmtimeUtils;
+using static Wasm.SourceGen.WasmtimeUtils;
 
 // See https://aka.ms/new-console-template for more information
 var modulePath = "C:/Users/JesseWellenberg/repo/wasi-sourcegen/SourceGenExample/bin/Debug/net7.0/SourceGenExample.wasm";
@@ -28,10 +27,9 @@ linker.DefineFunction("env", "hello", () =>
 var instance = linker.Instantiate(store, module);
 var start = instance.GetFunction("_start");
 var helloFrom = instance.GetFunction("hello");
-var stringParam = instance.GetFunction<int, int>("string_param");
 
-var mem = instance.GetMemory("memory");
-var name = CreateWasmString(instance, "Jesse");
+var stringParam = instance.GetFunction<int, int>("hello");
+var name = CreateWasmString(instance, "Neighbour");
 
 start.Invoke();
 helloFrom.Invoke();
