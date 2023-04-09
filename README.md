@@ -18,7 +18,7 @@ This repository contains a C# source generator for generating WASI modules from 
 
 The package has 2 projects:
 - [Wasm.SourceGen](Wasm.SourceGen) is a class library holding types and functions relating to the source generator, this namespace can be used by guest modules and C# hosts.
-- [Wasm.SourceGen.Analyzers](Wasi.SourceGen.Analyzers) contains the actual C# source generator.
+- [Wasm.SourceGen.Analyzers](Wasm.SourceGen.Analyzers) contains the actual C# source generator.
 
 ## Usage
 
