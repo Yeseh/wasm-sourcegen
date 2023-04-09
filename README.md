@@ -1,5 +1,5 @@
 <div align="center">
-  <h1><code>Wasi.SourceGenerator</code></h1>
+  <h1><code>Wasm.SourceGen</code></h1>
 
   <p>
     <strong>
@@ -17,8 +17,8 @@
 This repository contains a C# source generator for generating WASI modules from pure C# code. It does this by generating C code calling into the mono C driver. This can can then be compiled to a WASI module using the [dotnet-wasi-sdk]. In the future, this will hopefully support the [Component Model].
 
 The package has 2 projects:
-- [Wasi.SourceGenerator]("Wasi.SourceGenerator") is a class library holding types and functions relating to the source generator, this namespace can be used by guest modules and C# hosts.
-- [Wasi.SourceGenerator.Analyzers](Wasi.SourceGenerator.Analyzers) contains the actual C# source generator.
+- [Wasm.SourceGen]("Wasm.SourceGen") is a class library holding types and functions relating to the source generator, this namespace can be used by guest modules and C# hosts.
+- [Wasm.SourceGen.Analyzers](Wasi.SourceGen.Analyzers) contains the actual C# source generator.
 
 ## Usage
 
@@ -61,8 +61,6 @@ public static extern void Hello();
 ### Executing
 
 The project can be built and run by executing:
-> make build
-
 > make run
 
 ## Contributing
