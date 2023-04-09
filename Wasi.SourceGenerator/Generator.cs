@@ -307,7 +307,7 @@ void attach_internal_calls() {{
             {
                 Directory.CreateDirectory(outputDir);
             }
-            File.WriteAllText(Path.Combine(outputDir, "guid.interop.gen.c"), source); 
+            File.WriteAllText(Path.Combine(outputDir, "interop.gen.c"), source); 
         }
 
         private string ExportPointer(GeneratorExecutionContext context, WasiMethod method)
