@@ -342,7 +342,7 @@ void attach_internal_calls() {{
 
             var source = $@"
 __attribute__((export_name(""{method.WasmFunctionName}"")))
-void wasm_export_{method.Name.ToLowerSnakeCase()}({thisParam}{paramListJoin}) {{
+void __wasm_export_{method.Name.ToLowerSnakeCase()}({thisParam}{paramListJoin}) {{
     if(!method_{method.Name}) {{
         method_{method.Name} = lookup_dotnet_method(""{method.Assembly}.dll"", ""{method.Namespace}"", ""{method.Class}"", ""{method.Name}"", -1);
         assert(method_{method.Name});
@@ -365,10 +365,10 @@ void wasm_export_{method.Name.ToLowerSnakeCase()}({thisParam}{paramListJoin}) {{
 
         private string ImportDeclaration(GeneratorExecutionContext context, WasiMethod method)
             => $"__attribute__((__import_module__(\"{method.WasmModule}\"), __import_name__(\"{method.WasmFunctionName}\")))\n"
-                + $"extern void wasm_import_{method.Name.ToLowerSnakeCase()}();";
+                + $"extern void __wasm_import_{method.WasmModule.ToLowerSnakeCase()}_{method.Name.ToLowerSnakeCase()}();";
 
         private string InternalCall(GeneratorExecutionContext context, WasiMethod import)
-            => $"mono_add_internal_call(\"{import.Namespace}.{import.Class}::{import.Name}\", wasm_import_{import.Name.ToLowerSnakeCase()});";
+            => $"mono_add_internal_call(\"{import.Namespace}.{import.Class}::{import.Name}\", __wasm_import_{import.WasmModule.ToLowerSnakeCase()}_{import.Name.ToLowerSnakeCase()});";
         
         public void Initialize(GeneratorInitializationContext context) 
         {
