@@ -307,7 +307,7 @@ void attach_internal_calls() {{
             {
                 Directory.CreateDirectory(outputDir);
             }
-            File.WriteAllText(Path.Combine(outputDir, "guid.interop.gen.c"), source); 
+            File.WriteAllText(Path.Combine(outputDir, "interop.gen.c"), source); 
         }
 
         private string ExportPointer(GeneratorExecutionContext context, WasiMethod method)
@@ -342,7 +342,7 @@ void attach_internal_calls() {{
 
             var source = $@"
 __attribute__((export_name(""{method.WasmFunctionName}"")))
-void __wasm_export_{method.Name.ToLowerSnakeCase()}({thisParam}{paramListJoin}) {{
+MonoObject* __wasm_export_{method.Name.ToLowerSnakeCase()}({thisParam}{paramListJoin}) {{
     if(!method_{method.Name}) {{
         method_{method.Name} = lookup_dotnet_method(""{method.Assembly}.dll"", ""{method.Namespace}"", ""{method.Class}"", ""{method.Name}"", -1);
         assert(method_{method.Name});
