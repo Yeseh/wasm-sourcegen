@@ -78,15 +78,18 @@ namespace Wasm.SourceGen.Analyzers
                         wasmMethod.WasmFunctionName = importAttribute.ConstructorArguments[1].Value.ToString();
                     }
 
-                    foreach (var param in methodDeclaration.ParameterList.Parameters)
+                    if (wasmMethod.Type == MethodType.Import || (!wasmMethod.IsStatic || methodDeclaration.ParameterList.Parameters.Count > 1))
                     {
-                        var ident = param.Identifier.ValueText;
-                        var parSymbol = (IParameterSymbol)context.SemanticModel.GetDeclaredSymbol(param);
-                        wasmMethod.Params.Add(new WasmMethodParameter
+                        foreach (var param in methodDeclaration.ParameterList.Parameters)
                         {
-                            Ident = param.Identifier.ValueText,
-                            TypeSymbol = parSymbol.Type
-                        });
+                            var ident = param.Identifier.ValueText;
+                            var parSymbol = (IParameterSymbol)context.SemanticModel.GetDeclaredSymbol(param);
+                            wasmMethod.Params.Add(new WasmMethodParameter
+                            {
+                                Ident = param.Identifier.ValueText,
+                                TypeSymbol = parSymbol.Type
+                            });
+                        }
                     }
 
                     WasiMethods.Add(wasmMethod);

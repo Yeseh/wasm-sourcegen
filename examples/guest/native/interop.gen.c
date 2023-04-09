@@ -15,11 +15,14 @@ MonoArray* mono_wasm_typed_array_new(void* arr, int length) {
 
 __attribute__((__import_module__("env"), __import_name__("hello")))
 extern void __wasm_import_env_hello();
+__attribute__((__import_module__("env"), __import_name__("make_other_class")))
+extern void __wasm_import_env_make_other_class(MonoObject*);
 
 MonoMethod* method_HelloFrom;
 MonoMethod* method_StringParam;
 MonoMethod* method_ArrayParam;
-MonoMethod* method_ObjectParam;
+MonoMethod* method_ObjectImportParam;
+MonoMethod* method_Hello;
 MonoMethod* method_ThisContext;
 
 
@@ -69,16 +72,31 @@ MonoObject* __wasm_export_array_param(char* name,void* nrs_ptr, int nrs_len) {
     return res;
 }
 
-__attribute__((export_name("object_param")))
-MonoObject* __wasm_export_object_param(MonoObject* klass) {
-    if(!method_ObjectParam) {
-        method_ObjectParam = lookup_dotnet_method("guest.dll", "guest", "Program", "ObjectParam", -1);
-        assert(method_ObjectParam);
+__attribute__((export_name("object_import_param")))
+MonoObject* __wasm_export_object_import_param() {
+    if(!method_ObjectImportParam) {
+        method_ObjectImportParam = lookup_dotnet_method("guest.dll", "guest", "Program", "ObjectImportParam", -1);
+        assert(method_ObjectImportParam);
     }
     
     MonoObject* exception;
-    void* method_params[] = { klass };
-    MonoObject* res = mono_wasm_invoke_method(method_ObjectParam, NULL, method_params, &exception);
+    void* method_params[] = {  };
+    MonoObject* res = mono_wasm_invoke_method(method_ObjectImportParam, NULL, method_params, &exception);
+    assert(!exception);
+    
+    return res;
+}
+
+__attribute__((export_name("class_hello")))
+MonoObject* __wasm_export_hello(MonoObject* dotnet_target_instance) {
+    if(!method_Hello) {
+        method_Hello = lookup_dotnet_method("guest.dll", "guest", "OtherClass", "Hello", -1);
+        assert(method_Hello);
+    }
+    
+    MonoObject* exception;
+    void* method_params[] = {  };
+    MonoObject* res = mono_wasm_invoke_method(method_Hello, dotnet_target_instance, method_params, &exception);
     assert(!exception);
     
     return res;
@@ -106,4 +124,5 @@ void fake_settimeout(int timeout) {
 void attach_internal_calls() {
     mono_add_internal_call("System.Threading.TimerQueue::SetTimeout", fake_settimeout);
     mono_add_internal_call("guest.Interop::Hello", __wasm_import_env_hello);
+	mono_add_internal_call("guest.Interop::MakeOtherClass", __wasm_import_env_make_other_class);
 }
