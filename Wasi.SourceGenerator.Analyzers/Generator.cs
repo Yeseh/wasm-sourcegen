@@ -60,13 +60,18 @@ namespace Wasi.SourceGenerator
         public string CParam {
             get
             {
+                // TODO: This feels a little dirty, can probs find something nicer to not check the dict twice
+                // Because a lot of built in types like 'string' are implemented as a class underwater
+                // check if the lowered type identifier is directly available in the param templates
+                // Otherwise check other object types to try to get the right type
                 var typeName = TypeIdent;
                 var hasCParam = Generator.CInputParam.TryGetValue(typeName, out var template);
                 if (hasCParam) { return string.Format(template, CIdent); }
 
                 if (IsArray) { typeName = "array"; }
-                if (IsClass || IsInterface) { typeName = "object"; }
-                if (IsStruct) { throw new NotSupportedException("Struct types are not supported as method parameters"); }
+                else if (IsClass || IsInterface) { typeName = "object"; }
+                else if (IsStruct) { throw new NotSupportedException("Struct types are not supported as method parameters"); }
+
                 hasCParam = Generator.CInputParam.TryGetValue(typeName, out template);
                 if (!hasCParam) { throw new NotSupportedException($"Type {typeName} was is not supported as input parameter"); }
 
@@ -76,43 +81,7 @@ namespace Wasi.SourceGenerator
         }
 
         public string CCleanup
-        {
-            get
-            {
-                return string.Format(Generator.CCleanupTemplates[TypeIdent], CIdent);
-            }
-        }
-
-        private bool IsArrayOrIEnumerable()
-        {
-            // Check if the type is an array
-            if (TypeSymbol.TypeKind == TypeKind.Array)
-            {
-                return true;
-            }
-
-            // Check if the type implements IEnumerable<T>
-            INamedTypeSymbol ienumerableSymbol = TypeSymbol.ContainingAssembly
-                .GetTypeByMetadataName("System.Collections.Generic.IEnumerable`1");
-
-            if (ienumerableSymbol != null && TypeSymbol.AllInterfaces.Contains(ienumerableSymbol))
-            {
-                return true;
-            }
-
-            // Check if the type implements IEnumerable
-            INamedTypeSymbol ienumerableNonGenericSymbol = TypeSymbol.ContainingAssembly
-                .GetTypeByMetadataName("System.Collections.IEnumerable");
-
-            if (ienumerableNonGenericSymbol != null && TypeSymbol.AllInterfaces.Contains(ienumerableNonGenericSymbol))
-            {
-                return true;
-            }
-
-            // If the type is not an array or does not implement IEnumerable, return false
-            return false;
-        }
-
+            => string.Format(Generator.CCleanupTemplates[TypeIdent], CIdent);
     }
 
     enum MethodType
@@ -179,62 +148,35 @@ namespace Wasi.SourceGenerator
                     };
 
                     // TODO: Add 'this' parameter to params somehow
-                    if (wasiMethod.IsStatic)
-                    {
-
-                    }
+                    if (wasiMethod.IsStatic) {}
 
                     if (exportAttribute != null) 
                     { 
                         wasiMethod.Type = MethodType.Export;
+                        var arg = exportAttribute.ConstructorArguments.FirstOrDefault();
+                        if (arg.IsNull)  { throw new Exception("No constructor arguments found"); }
 
-                        // TODO: Doesn't deal with multiple constructors nicely
-                        for (int i = 0, n = exportAttribute.ConstructorArguments.Length; i < n; i++)
-                        { 
-                            var arg = exportAttribute.ConstructorArguments[i];
-                            switch (i)
-                            {
-                                case 0: 
-                                    wasiMethod.WasmNamespace = arg.Value.ToString();
-                                    break;
-                                case 1: 
-                                    wasiMethod.WasmModule= arg.Value.ToString();
-                                    break;
-                                case 2: 
-                                    wasiMethod.WasmFunctionName = arg.Value.ToString();
-                                    break;
-                            }
-                        }
-
-                        foreach (var param in methodDeclaration.ParameterList.Parameters)
-                        {
-                            var ident = param.Identifier.ValueText;
-                            var parSymbol = (IParameterSymbol)context.SemanticModel.GetDeclaredSymbol(param);
-                            wasiMethod.Params.Add(new WasiMethodInputParameter
-                            {
-                                Ident = param.Identifier.ValueText,
-                                TypeSymbol = parSymbol.Type
-                            });
-                        }
+                        wasiMethod.WasmFunctionName = arg.Value.ToString();
                     }
                     else if (importAttribute != null) 
                     { 
-                        for (int i = 0, n = importAttribute.ConstructorArguments.Length; i < n; i++)
-                        { 
-                            var arg = importAttribute.ConstructorArguments[i];
-                            switch (i)
-                            {
-                                case 0: 
-                                    wasiMethod.WasmNamespace = arg.Value.ToString();
-                                    break;
-                                case 1: 
-                                    wasiMethod.WasmModule= arg.Value.ToString();
-                                    break;
-                                case 2: 
-                                    wasiMethod.WasmFunctionName = arg.Value.ToString();
-                                    break;
-                            }
-                        }
+                        wasiMethod.Type = MethodType.Import; 
+                        wasiMethod.WasmNamespace = importAttribute.ConstructorArguments[0].ToString();
+                        wasiMethod.WasmModule = importAttribute.ConstructorArguments[1].ToString();
+                        wasiMethod.WasmFunctionName = importAttribute.ConstructorArguments[2].ToString();
+
+                        var func = importAttribute.ConstructorArguments[2].ToString();
+                    }
+
+                    foreach (var param in methodDeclaration.ParameterList.Parameters)
+                    {
+                        var ident = param.Identifier.ValueText;
+                        var parSymbol = (IParameterSymbol)context.SemanticModel.GetDeclaredSymbol(param);
+                        wasiMethod.Params.Add(new WasiMethodInputParameter
+                        {
+                            Ident = param.Identifier.ValueText,
+                            TypeSymbol = parSymbol.Type
+                        });
                     }
 
                     WasiMethods.Add(wasiMethod);
@@ -298,7 +240,6 @@ void attach_internal_calls() {{
     mono_add_internal_call(""System.Threading.TimerQueue::SetTimeout"", fake_settimeout);
     {string.Join("\n\t", internalCalls)}
 }}
-
 ";
 
             var outputDir = Path.Combine(Path.GetDirectoryName(context.Compilation.SyntaxTrees.First().FilePath), "native");

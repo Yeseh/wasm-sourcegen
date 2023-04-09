@@ -9,7 +9,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Wasmtime" Version="6.0.1" />
+    <ProjectReference Include="..\Wasi.SourceGenerator\Wasi.SourceGenerator.csproj"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Wasmtime" Version="7.0.0" />
   </ItemGroup>
 
 </Project>

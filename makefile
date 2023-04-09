@@ -3,10 +3,12 @@ run: build
 	dotnet run --project SourceGenHost/SourceGenHost.csproj
 
 .PHONY: build
-build: gen guest host
+build: genlib gen guest host 
 
-gen: 
+genlib:
 	dotnet build ./Wasi.SourceGenerator
+gen: 
+	dotnet build ./Wasi.SourceGenerator.Analyzers
 guest: 
 	dotnet build ./SourceGenExample --no-incremental
 host: 
