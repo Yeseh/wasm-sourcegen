@@ -12,10 +12,10 @@ build-example: guest host
 build: genlib gen
 
 genlib:
-	dotnet build Wasm.SourceGen --configuration release
+	dotnet build Wasm.SourceGen
 gen: 
-	dotnet build Wasm.SourceGen.Analyzers --no-incremental --configuration release
+	dotnet build Wasm.SourceGen.Analyzers --no-incremental
 guest: 
-	dotnet build examples/guest/guest.csproj --no-incremental --configuration release
-host: 
-	dotnet build examples/host-wastmtime/host-wasmtime.csproj --configuration release
+	dotnet build examples/guest/guest.csproj --configuration release --no-incremental
+host:  
+	dotnet build examples/host-wasmtime/host-wasmtime.csproj --configuration release

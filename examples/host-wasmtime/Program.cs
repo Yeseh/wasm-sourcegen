@@ -5,7 +5,7 @@ using static Wasm.SourceGen.WasmtimeUtils;
 // See https://aka.ms/new-console-template for more information
 
 // Only works from workspace :)
-var modulePath = "/workspaces/wasm-sourcegen/examples/guest/bin/Debug/net7.0/guest.wasm";
+var modulePath = "/workspaces/wasm-sourcegen/examples/guest/bin/release/net7.0/guest.wasm";
 var engineConfig = new Config().WithReferenceTypes(true);
 var engine = new Engine(engineConfig);
 var module = Module.FromFile(engine,modulePath);
@@ -30,7 +30,7 @@ var instance = linker.Instantiate(store, module);
 var start = instance.GetFunction("_start");
 var helloFrom = instance.GetFunction("hello");
 
-var stringParam = instance.GetFunction<int, int>("hello");
+var stringParam = instance.GetFunction<int, int>("string_param");
 var name = CreateWasmString(instance, "Neighbour");
 
 start.Invoke();

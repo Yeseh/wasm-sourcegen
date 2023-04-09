@@ -3,8 +3,6 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Linq;
 using System.IO;
 using System.Collections.Generic;
-using System;
-using System.Diagnostics;
 
 namespace Wasm.SourceGen.Analyzers
 {
@@ -71,13 +69,13 @@ namespace Wasm.SourceGen.Analyzers
                     if (exportAttribute != null) 
                     { 
                         wasmMethod.Type = MethodType.Export;
-                        wasmMethod.WasmFunctionName = exportAttribute.ConstructorArguments.FirstOrDefault().ToString();
+                        wasmMethod.WasmFunctionName = exportAttribute.ConstructorArguments.FirstOrDefault().Value.ToString();
                     }
                     else if (importAttribute != null) 
                     { 
                         wasmMethod.Type = MethodType.Import; 
-                        wasmMethod.WasmModule = importAttribute.ConstructorArguments[0].ToString();
-                        wasmMethod.WasmFunctionName = importAttribute.ConstructorArguments[1].ToString();
+                        wasmMethod.WasmModule = importAttribute.ConstructorArguments[0].Value.ToString();
+                        wasmMethod.WasmFunctionName = importAttribute.ConstructorArguments[1].Value.ToString();
                     }
 
                     foreach (var param in methodDeclaration.ParameterList.Parameters)

@@ -17,8 +17,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <WasiNativeFileReference Include="$(MSBuildThisFileDirectory)\native\*.c" />
+    <WasiNativeFileReference Include="$(MSBuildThisFileDirectory)\native\**\*.c" />
     <WasiAfterRuntimeLoaded Include="attach_internal_calls" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include=".\native\**\*.c" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
   </ItemGroup>
 
 </Project>
