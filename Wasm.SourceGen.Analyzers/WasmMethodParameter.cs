@@ -16,12 +16,9 @@ namespace Wasm.SourceGen.Analyzers
         public bool IsInterface => TypeSymbol.TypeKind == TypeKind.Interface;
         public string TypeIdent => TypeSymbol.Name.ToLowerInvariant();
         public string CIdent => this.Ident.ToLowerSnakeCase();
-
-        public bool NeedsTransform 
-            => Generator.CTransformTemplates.ContainsKey(TypeSymbol.Name.ToString().ToLower());
-
-        public bool NeedsCleanup 
-            => Generator.CCleanupTemplates.ContainsKey(TypeSymbol.Name.ToString().ToLower());
+        // TODO: Make this nicer for when more types need cleanup/transforms
+        public bool NeedsTransform => TypeIdent == "string" || IsArray;
+        public bool NeedsCleanup => TypeIdent == "string";
 
         public string CTransform
         {
@@ -29,7 +26,7 @@ namespace Wasm.SourceGen.Analyzers
             {
                 var typeName = TypeIdent; 
                 if (IsArray) { typeName = "array"; }
-                return string.Format(Generator.CTransformTemplates[TypeIdent], CIdent);
+                return string.Format(Generator.CTransformTemplates[typeName], CIdent);
             }
         }
 
@@ -39,8 +36,7 @@ namespace Wasm.SourceGen.Analyzers
             {
                 // TODO: This feels a little dirty, can probs find something nicer to not check the dict twice
                 // Because a lot of built in types like 'string' are implemented as a class underwater
-                // check if the lowered type identifier is directly available in the param templates
-                // Otherwise check other object types to try to get the right type
+                // Not really sure how to handle this yet, but it works haha
                 var typeName = TypeIdent;
                 var hasCParam = Generator.CInputParam.TryGetValue(typeName, out var template);
                 if (hasCParam) { return string.Format(template, CIdent); }

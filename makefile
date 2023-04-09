@@ -16,6 +16,6 @@ genlib:
 gen: 
 	dotnet build Wasm.SourceGen.Analyzers --no-incremental
 guest: 
-	dotnet build examples/guest/guest.csproj --configuration release --no-incremental
+	dotnet build examples/guest/guest.csproj --no-incremental
 host:  
-	dotnet build examples/host-wasmtime/host-wasmtime.csproj --configuration release
+	dotnet build examples/host-wasmtime/host-wasmtime.csproj

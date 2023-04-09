@@ -16,35 +16,20 @@ MonoArray* mono_wasm_typed_array_new(void* arr, int length) {
 __attribute__((__import_module__("env"), __import_name__("hello")))
 extern void __wasm_import_env_hello();
 
-MonoMethod* method_HelloFrom;
-MonoMethod* method_StringParam;
+MonoMethod* method_ArrayParam;
 
 
-__attribute__((export_name("hello")))
-MonoObject* __wasm_export_hello_from() {
-    if(!method_HelloFrom) {
-        method_HelloFrom = lookup_dotnet_method("guest.dll", "guest", "Program", "HelloFrom", -1);
-        assert(method_HelloFrom);
-    }
-    
-    MonoObject* exception;
-    void* method_params[] = {  };
-    MonoObject* res = mono_wasm_invoke_method(method_HelloFrom, NULL, method_params, &exception);
-    assert(!exception);
-    
-    return res;
-}
-
-__attribute__((export_name("string_param")))
-MonoObject* __wasm_export_string_param(char* name) {
-    if(!method_StringParam) {
-        method_StringParam = lookup_dotnet_method("guest.dll", "guest", "Program", "StringParam", -1);
-        assert(method_StringParam);
+__attribute__((export_name("array_param")))
+MonoObject* __wasm_export_array_param(char* name,void* nrs_ptr, int nrs_len) {
+    if(!method_ArrayParam) {
+        method_ArrayParam = lookup_dotnet_method("guest.dll", "guest", "Program", "ArrayParam", -1);
+        assert(method_ArrayParam);
     }
     MonoString* name_trans = mono_wasm_string_from_js(name);
+	MonoArray* nrs_trans = nrs_ptr ? mono_wasm_typed_array_new(nrs_ptr, nrs_len) : NULL;
     MonoObject* exception;
-    void* method_params[] = { name_trans };
-    MonoObject* res = mono_wasm_invoke_method(method_StringParam, NULL, method_params, &exception);
+    void* method_params[] = { name_trans,nrs_trans };
+    MonoObject* res = mono_wasm_invoke_method(method_ArrayParam, NULL, method_params, &exception);
     assert(!exception);
     free(name);
     return res;

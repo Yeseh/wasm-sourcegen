@@ -10,17 +10,24 @@ partial class Program
         Console.WriteLine("Hello from _start!");
     }
 
-    [WasmExport("hello")]
-    public static int HelloFrom()
-    {
-        Console.WriteLine("Hello from WASI");
-        return 1;
-    }
+    // [WasmExport("hello")]
+    // public static int HelloFrom()
+    // {
+    //     Console.WriteLine("Hello from WASI");
+    //     return 1;
+    // }
     
-    [WasmExport("string_param")]
-    public static int StringParam(string name)
+    // [WasmExport("string_param")]
+    // public static int StringParam(string name)
+    // {
+    //     Console.WriteLine($"Hello {name}, from WASI");
+    //     return 1;
+    // }
+
+    [WasmExport("array_param")]
+    public static int ArrayParam(string name, int[] nrs)
     {
-        Console.WriteLine($"Hello {name}, from WASI");
+        Console.WriteLine($"Counted: {nrs.Sum()}");
         return 1;
     }
 }

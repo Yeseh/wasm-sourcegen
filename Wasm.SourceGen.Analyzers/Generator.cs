@@ -24,13 +24,13 @@ namespace Wasm.SourceGen.Analyzers
 
         internal static Dictionary<string, string> CCleanupTemplates = new Dictionary<string, string>()
         {
-            { "string", "free({0});"}
+            { "string", "free({0});" }
         };
         
         internal static Dictionary<string, string> CTransformTemplates = new Dictionary<string, string>()
         {
             { "string", "MonoString* {0}_trans = mono_wasm_string_from_js({0});"},
-            { "array", "MonoArray* {0}_dotnet_array = {0}_ptr ? mono_wasm_typed_array({0}_ptr, {0}_len) : NULL" }
+            { "array", "MonoArray* {0}_trans = {0}_ptr ? mono_wasm_typed_array_new({0}_ptr, {0}_len) : NULL;" }
         };
 
 
