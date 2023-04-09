@@ -10,10 +10,17 @@ partial class Program
         Console.WriteLine("Hello from _start!");
     }
 
-    [WasiExport("", "dotnet", "hello_from")]
+    [WasiExport("", "dotnet", "hello")]
     public int HelloFrom()
     {
         Console.WriteLine("Hello from WASI");
+        return 1;
+    }
+    
+    [WasiExport("", "dotnet", "string_param")]
+    public int StringParam(string name)
+    {
+        Console.WriteLine($"Hello {name}, from WASI");
         return 1;
     }
 }

@@ -34,7 +34,7 @@ namespace Wasi.SourceGenerator
     [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
     public class WasiImportAttribute : Attribute
     {
-        public string NameSpace { get; }
+        public string Namespace { get; }
         
         public string Module { get; }
 
@@ -42,7 +42,7 @@ namespace Wasi.SourceGenerator
 
         public WasiImportAttribute(string nameSpace, string module, string functionName)
         {
-            this.NameSpace = nameSpace;
+            this.Namespace = nameSpace;
             this.Module = module;
             this.Function = functionName;
 

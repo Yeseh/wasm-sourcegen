@@ -5,8 +5,6 @@ using System.IO;
 using System.Collections.Generic;
 using System;
 using System.Diagnostics;
-using System.Text;
-using System.Text.RegularExpressions;
 
 namespace Wasi.SourceGenerator
 {
@@ -21,28 +19,98 @@ namespace Wasi.SourceGenerator
         public string WasmFunctionName{ get; set; }
         public string WasmNamespace { get; set; }
 
-        public List<WasiMethodParameter> Params { get; set; } = new List<WasiMethodParameter>();
+        public bool IsStatic { get; set; }
+
+        public List<WasiMethodInputParameter> Params { get; set; } = new List<WasiMethodInputParameter>();
+
+        public ITypeSymbol ReturnType { get; set; }
 
         public string FullyQualifiedMethodName => $"{Namespace}.{Class}::{Name}";
     }
 
-    class WasiMethodParameter
+    class WasiMethodInputParameter
     {
-        public string Identitfier { get; set; }
+        public string Ident { get; set; }
 
-        public string Type { get; set; }
+        public ITypeSymbol TypeSymbol { get; set; }
 
-        public string CType()
+        public bool IsArray => TypeSymbol.TypeKind == TypeKind.Array;
+        public bool IsClass => TypeSymbol.TypeKind == TypeKind.Class;
+        public bool IsStruct => TypeSymbol.TypeKind == TypeKind.Struct;
+        public bool IsInterface => TypeSymbol.TypeKind == TypeKind.Interface;
+        public string CIdent => this.Ident.ToLowerSnakeCase();
+
+        public bool NeedsTransform 
+            => Generator.CTransformTemplates.ContainsKey(TypeSymbol.Name.ToString());
+
+        public bool NeedsCleanup 
+            => Generator.CCleanupTemplates.ContainsKey(TypeSymbol.Name.ToString());
+
+        public string CTransform
         {
-            var crepr = string.Empty;
-            switch (Type)
+            get
             {
-                default:
-                    throw new Exception("Unsupported type");
+                var typeName = TypeSymbol.Name.ToString();
+                if (IsArray) { typeName = "array"; }
+                return string.Format(Generator.CTransformTemplates[typeName], CIdent);
+            }
+        }
+
+        public string CParam {
+            get
+            {
+                var typeName = TypeSymbol.Name.ToString();
+                if (IsArray) { typeName = "array"; }
+                if (IsClass || IsInterface) { typeName = "object"; }
+                if (IsStruct) { throw new NotSupportedException("Struct types are not supported as method parameters"); }
+
+                var hasCParam = Generator.CInputParam.TryGetValue(typeName, out var crepr);
+                // TODO: Throw error for now, default to monoobject?
+                if (!hasCParam) { throw new NotSupportedException($"Type: {typeName} is not supported as a method parameter");  }
+
+                return crepr;
+            }
+        }
+
+        public string CCleanup
+        {
+            get
+            {
+                var typeName = TypeSymbol.Name.ToString();
+                return string.Format(Generator.CCleanupTemplates[typeName], CIdent);
+            }
+        }
+
+        private bool IsArrayOrIEnumerable()
+        {
+            // Check if the type is an array
+            if (TypeSymbol.TypeKind == TypeKind.Array)
+            {
+                return true;
             }
 
-            return crepr;
+            // Check if the type implements IEnumerable<T>
+            INamedTypeSymbol ienumerableSymbol = TypeSymbol.ContainingAssembly
+                .GetTypeByMetadataName("System.Collections.Generic.IEnumerable`1");
+
+            if (ienumerableSymbol != null && TypeSymbol.AllInterfaces.Contains(ienumerableSymbol))
+            {
+                return true;
+            }
+
+            // Check if the type implements IEnumerable
+            INamedTypeSymbol ienumerableNonGenericSymbol = TypeSymbol.ContainingAssembly
+                .GetTypeByMetadataName("System.Collections.IEnumerable");
+
+            if (ienumerableNonGenericSymbol != null && TypeSymbol.AllInterfaces.Contains(ienumerableNonGenericSymbol))
+            {
+                return true;
+            }
+
+            // If the type is not an array or does not implement IEnumerable, return false
+            return false;
         }
+
     }
 
     enum MethodType
@@ -54,6 +122,27 @@ namespace Wasi.SourceGenerator
     [Generator]
     public class Generator : ISourceGenerator
     {
+
+        internal static Dictionary<string, string> CInputParam = new Dictionary<string, string>()
+        {
+            { "string", "char* {0}" },
+            { "int", "int {0}" },
+            { "bool", "bool {0}" },
+            { "object", "MonoObject* {0}" },
+            { "array", "void* {0}_ptr, int {0}_len" },
+        };
+
+        internal static Dictionary<string, string> CCleanupTemplates = new Dictionary<string, string>()
+        {
+            { "string", "free({0});"}
+        };
+        
+        internal static Dictionary<string, string> CTransformTemplates = new Dictionary<string, string>()
+        {
+            { "string", "MonoString* {0}_trans = mono_wasm_string_from_js({0});"},
+            { "array", "MonoArray* {0}_dotnet_array = {0}_ptr ? mono_wasm_typed_array({0}_ptr, {0}_len) : NULL" }
+        };
+
         const string WasiExportAttributeName = "WasiExportAttribute";
 
         const string WasiImportAttributeName = "WasiImportAttribute";
@@ -75,7 +164,6 @@ namespace Wasi.SourceGenerator
                     var importAttribute = attributes.FirstOrDefault(a => a.AttributeClass.Name == WasiImportAttributeName);
 
                     if (exportAttribute == null && importAttribute == null ) { return; }
-                    var canExport = symbol.IsStatic;
                     var canImport = symbol.IsStatic && symbol.IsExtern;
 
                     var wasiMethod = new WasiMethod()
@@ -83,8 +171,26 @@ namespace Wasi.SourceGenerator
                         Assembly = symbol.ContainingAssembly.Name,
                         Namespace = symbol.ContainingNamespace.Name,
                         Class = symbol.ContainingType.Name,
-                        Name = symbol.Name
+                        Name = symbol.Name,
+                        ReturnType = symbol.ReturnType,
+                        IsStatic = symbol.IsStatic
                     };
+
+                    // TODO: Add 'this' parameter to params somehow
+                    if (wasiMethod.IsStatic)
+                    {
+
+                    }
+
+                    foreach (IParameterSymbol par in symbol.Parameters)
+                    {
+                        var wasiPar = new WasiMethodInputParameter
+                        {
+                            TypeSymbol = par.Type,
+                            Ident = par.Name
+                        };
+                        wasiMethod.Params.Add(wasiPar);
+                    }
 
                     if (exportAttribute != null) 
                     { 
@@ -106,7 +212,6 @@ namespace Wasi.SourceGenerator
                                     break;
                             }
                         }
-
                     }
                     else if (importAttribute != null) 
                     { 
@@ -131,10 +236,10 @@ namespace Wasi.SourceGenerator
                     foreach (var param in methodDeclaration.ParameterList.Parameters)
                     {
                         var ident = param.Identifier.ValueText;
-                        wasiMethod.Params.Add(new WasiMethodParameter
+                        wasiMethod.Params.Add(new WasiMethodInputParameter
                         {
-                            Identitfier = param.Identifier.ValueText,
-                            Type = ((IParameterSymbol)param.Type).Type.ToString(),
+                            Ident = param.Identifier.ValueText,
+                            TypeSymbol = ((IParameterSymbol)param.Type).Type,
                         });
                     }
                         
@@ -163,7 +268,7 @@ namespace Wasi.SourceGenerator
                         importDecls.Add(ImportDeclaration(context, method));
                         break;
                     case MethodType.Export:
-                        exportDecls.Add(ExportDeclaration(context, method));
+                        exportDecls.Add(ExportFunctionDeclaration(context, method));
                         exportPointers.Add(ExportPointer(context, method));
                         break;
                 } 
@@ -175,13 +280,29 @@ namespace Wasi.SourceGenerator
 #include <assert.h>
 #include <string.h>
 
+MonoClass* mono_get_byte_class(void);
+MonoDomain* mono_get_root_domain(void);
+
+MonoArray* mono_wasm_typed_array_new(void* arr, int length) {{
+    MonoClass* typeClass = mono_get_byte_class();
+    MonoArray* buffer = mono_array_new(mono_get_root_domain(), typeClass, length);
+    memcpy(mono_array_addr_with_size(buffer, 1, 0), arr, length);
+    return buffer;
+}}
+
+
 {string.Join("\n", exportPointers)}
 
 {string.Join("\n", importDecls)}
 
 {string.Join("\n", exportDecls)}
 
+void fake_settimeout(int timeout) {{
+    //
+}}
+
 void attach_internal_calls() {{
+    mono_add_internal_call(System.Threading.TimerQueue::SetTimeout, fake_settimeout);
     {string.Join("\n\t", internalCalls)}
 }}
 
@@ -204,19 +325,50 @@ void attach_internal_calls() {{
         private string ExportPointer(GeneratorExecutionContext context, WasiMethod method)
             => $"MonoMethod* method_{method.Name};";
 
-        private string ExportDeclaration(GeneratorExecutionContext context, WasiMethod method)
+        private string ExportFunctionDeclaration(GeneratorExecutionContext context, WasiMethod method)
         {
+            var paramList = new List<string>();
+            var transforms = new List<string>();
+            var cleanUps = new List<string>();
+            var invokeParams = new List<string>();
+
+            foreach (var par in method.Params)
+            {
+                paramList.Add($"{par.CParam}");
+                if (par.NeedsTransform)
+                {
+                    transforms.Add(par.CTransform);   
+                    invokeParams.Add($"{par.CIdent}_trans");
+                }
+                else { invokeParams.Add(par.CIdent); }
+                if (par.NeedsCleanup) { cleanUps.Add(par.CCleanup); }
+            }
+
+            var thisParam = method.IsStatic ? "MonoObject* dotnet_target_instance," : string.Empty;
+            var thisInvoke = method.IsStatic ? "dotnet_target_instance" : "NULL";
+            var paramListJoin = string.Join(",", paramList);
+            var invokeJoin = string.Join(",", invokeParams);
+            var cleanUpsJoin = string.Join("\n", cleanUps);
+            var transformsJoin = string.Join("\n", transforms);
+
             var source = $@"
 __attribute__((export_name(""{method.WasmFunctionName}"")))
-void wasm_export_{method.Name.ToLowerSnakeCase()}() {{
+void wasm_export_{method.Name.ToLowerSnakeCase()}({thisParam}{paramListJoin}) {{
     if(!method_{method.Name}) {{
         method_{method.Name} = lookup_dotnet_method(""{method.Assembly}.dll"", ""{method.Namespace}"", ""{method.Class}"", ""{method.Name}"", -1);
         assert(method_{method.Name});
     }}
+    
+    {transformsJoin}
+
     MonoObject* exception;
-    void* method_params[] = {{}};
-    mono_wasm_invoke_method(method_{method.Name}, NULL, method_params, &exception);
+    void* method_params[] = {{ {invokeJoin} }};
+    MonoObject* res = mono_wasm_invoke_method(method_{method.Name}, {thisInvoke}, method_params, &exception);
     assert(!exception);
+
+    {cleanUpsJoin}
+
+    return res;
 }}";
 
             return source;

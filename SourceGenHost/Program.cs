@@ -23,7 +23,7 @@ linker.DefineFunction("env", "hello", () =>
 
 var instance = linker.Instantiate(store, module);
 var start = instance.GetFunction("_start");
-var helloFrom = instance.GetFunction("hello_from");
+var helloFrom = instance.GetFunction("hello");
 
 if (helloFrom == null) { throw new Exception("Target function is not present");  }
 
