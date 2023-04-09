@@ -38,37 +38,40 @@ namespace Wasi.SourceGenerator
         public bool IsClass => TypeSymbol.TypeKind == TypeKind.Class;
         public bool IsStruct => TypeSymbol.TypeKind == TypeKind.Struct;
         public bool IsInterface => TypeSymbol.TypeKind == TypeKind.Interface;
+        public string TypeIdent => TypeSymbol.Name.ToLowerInvariant();
         public string CIdent => this.Ident.ToLowerSnakeCase();
 
         public bool NeedsTransform 
-            => Generator.CTransformTemplates.ContainsKey(TypeSymbol.Name.ToString());
+            => Generator.CTransformTemplates.ContainsKey(TypeSymbol.Name.ToString().ToLower());
 
         public bool NeedsCleanup 
-            => Generator.CCleanupTemplates.ContainsKey(TypeSymbol.Name.ToString());
+            => Generator.CCleanupTemplates.ContainsKey(TypeSymbol.Name.ToString().ToLower());
 
         public string CTransform
         {
             get
             {
-                var typeName = TypeSymbol.Name.ToString();
+                var typeName = TypeIdent; 
                 if (IsArray) { typeName = "array"; }
-                return string.Format(Generator.CTransformTemplates[typeName], CIdent);
+                return string.Format(Generator.CTransformTemplates[TypeIdent], CIdent);
             }
         }
 
         public string CParam {
             get
             {
-                var typeName = TypeSymbol.Name.ToString();
+                var typeName = TypeIdent;
+                var hasCParam = Generator.CInputParam.TryGetValue(typeName, out var template);
+                if (hasCParam) { return string.Format(template, CIdent); }
+
                 if (IsArray) { typeName = "array"; }
                 if (IsClass || IsInterface) { typeName = "object"; }
                 if (IsStruct) { throw new NotSupportedException("Struct types are not supported as method parameters"); }
+                hasCParam = Generator.CInputParam.TryGetValue(typeName, out template);
+                if (!hasCParam) { throw new NotSupportedException($"Type {typeName} was is not supported as input parameter"); }
 
-                var hasCParam = Generator.CInputParam.TryGetValue(typeName, out var crepr);
-                // TODO: Throw error for now, default to monoobject?
-                if (!hasCParam) { throw new NotSupportedException($"Type: {typeName} is not supported as a method parameter");  }
-
-                return crepr;
+                var formatted = string.Format(template, CIdent);
+                return formatted; 
             }
         }
 
@@ -76,8 +79,7 @@ namespace Wasi.SourceGenerator
         {
             get
             {
-                var typeName = TypeSymbol.Name.ToString();
-                return string.Format(Generator.CCleanupTemplates[typeName], CIdent);
+                return string.Format(Generator.CCleanupTemplates[TypeIdent], CIdent);
             }
         }
 
@@ -182,19 +184,10 @@ namespace Wasi.SourceGenerator
 
                     }
 
-                    foreach (IParameterSymbol par in symbol.Parameters)
-                    {
-                        var wasiPar = new WasiMethodInputParameter
-                        {
-                            TypeSymbol = par.Type,
-                            Ident = par.Name
-                        };
-                        wasiMethod.Params.Add(wasiPar);
-                    }
-
                     if (exportAttribute != null) 
                     { 
                         wasiMethod.Type = MethodType.Export;
+
                         // TODO: Doesn't deal with multiple constructors nicely
                         for (int i = 0, n = exportAttribute.ConstructorArguments.Length; i < n; i++)
                         { 
@@ -211,6 +204,17 @@ namespace Wasi.SourceGenerator
                                     wasiMethod.WasmFunctionName = arg.Value.ToString();
                                     break;
                             }
+                        }
+
+                        foreach (var param in methodDeclaration.ParameterList.Parameters)
+                        {
+                            var ident = param.Identifier.ValueText;
+                            var parSymbol = (IParameterSymbol)context.SemanticModel.GetDeclaredSymbol(param);
+                            wasiMethod.Params.Add(new WasiMethodInputParameter
+                            {
+                                Ident = param.Identifier.ValueText,
+                                TypeSymbol = parSymbol.Type
+                            });
                         }
                     }
                     else if (importAttribute != null) 
@@ -233,16 +237,6 @@ namespace Wasi.SourceGenerator
                         }
                     }
 
-                    foreach (var param in methodDeclaration.ParameterList.Parameters)
-                    {
-                        var ident = param.Identifier.ValueText;
-                        wasiMethod.Params.Add(new WasiMethodInputParameter
-                        {
-                            Ident = param.Identifier.ValueText,
-                            TypeSymbol = ((IParameterSymbol)param.Type).Type,
-                        });
-                    }
-                        
                     WasiMethods.Add(wasiMethod);
                 }
             }
@@ -290,10 +284,9 @@ MonoArray* mono_wasm_typed_array_new(void* arr, int length) {{
     return buffer;
 }}
 
+{string.Join("\n", importDecls)}
 
 {string.Join("\n", exportPointers)}
-
-{string.Join("\n", importDecls)}
 
 {string.Join("\n", exportDecls)}
 
@@ -302,7 +295,7 @@ void fake_settimeout(int timeout) {{
 }}
 
 void attach_internal_calls() {{
-    mono_add_internal_call(System.Threading.TimerQueue::SetTimeout, fake_settimeout);
+    mono_add_internal_call(""System.Threading.TimerQueue::SetTimeout"", fake_settimeout);
     {string.Join("\n\t", internalCalls)}
 }}
 
@@ -313,13 +306,8 @@ void attach_internal_calls() {{
             if (!Directory.Exists(outputDir))
             {
                 Directory.CreateDirectory(outputDir);
-                Debug.WriteLine($"Created directory: {outputDir}");
             }
-            if (File.Exists(filePath))
-            {
-                File.Delete(filePath);
-            }
-            File.WriteAllText(Path.Combine(outputDir, "interop.gen.c"), source); 
+            File.WriteAllText(Path.Combine(outputDir, "guid.interop.gen.c"), source); 
         }
 
         private string ExportPointer(GeneratorExecutionContext context, WasiMethod method)
@@ -344,12 +332,13 @@ void attach_internal_calls() {{
                 if (par.NeedsCleanup) { cleanUps.Add(par.CCleanup); }
             }
 
-            var thisParam = method.IsStatic ? "MonoObject* dotnet_target_instance," : string.Empty;
-            var thisInvoke = method.IsStatic ? "dotnet_target_instance" : "NULL";
+            var isNonStaticExport = method.IsStatic && method.Type == MethodType.Export;
+            var thisParam = !isNonStaticExport ? "MonoObject* dotnet_target_instance," : string.Empty;
+            var thisInvoke = !isNonStaticExport ? "dotnet_target_instance" : "NULL";
             var paramListJoin = string.Join(",", paramList);
             var invokeJoin = string.Join(",", invokeParams);
-            var cleanUpsJoin = string.Join("\n", cleanUps);
-            var transformsJoin = string.Join("\n", transforms);
+            var cleanUpsJoin = string.Join("\n\t", cleanUps);
+            var transformsJoin = string.Join("\n\t", transforms);
 
             var source = $@"
 __attribute__((export_name(""{method.WasmFunctionName}"")))

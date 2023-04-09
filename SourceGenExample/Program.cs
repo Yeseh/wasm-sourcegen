@@ -11,14 +11,14 @@ partial class Program
     }
 
     [WasiExport("", "dotnet", "hello")]
-    public int HelloFrom()
+    public static int HelloFrom()
     {
         Console.WriteLine("Hello from WASI");
         return 1;
     }
     
     [WasiExport("", "dotnet", "string_param")]
-    public int StringParam(string name)
+    public static int StringParam(string name)
     {
         Console.WriteLine($"Hello {name}, from WASI");
         return 1;
