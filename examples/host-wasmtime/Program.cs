@@ -3,7 +3,9 @@
 using static Wasm.SourceGen.WasmtimeUtils;
 
 // See https://aka.ms/new-console-template for more information
-var modulePath = "C:/Users/JesseWellenberg/repo/wasi-sourcegen/SourceGenExample/bin/Debug/net7.0/SourceGenExample.wasm";
+
+// Only works from workspace :)
+var modulePath = "/workspaces/wasm-sourcegen/examples/guest/bin/Debug/net7.0/guest.wasm";
 var engineConfig = new Config().WithReferenceTypes(true);
 var engine = new Engine(engineConfig);
 var module = Module.FromFile(engine,modulePath);

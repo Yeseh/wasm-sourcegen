@@ -8,91 +8,12 @@ using System.Diagnostics;
 
 namespace Wasm.SourceGen.Analyzers
 {
-    class WasiMethod
-    {
-        public string Assembly { get; set; }
-        public string Namespace { get; set; }
-        public string Class { get; set; }
-        public string Name { get; set; }
-        public MethodType Type { get; set; }
-        public string WasmModule { get; set; }
-        public string WasmFunctionName{ get; set; }
-        public string WasmNamespace { get; set; }
-
-        public bool IsStatic { get; set; }
-
-        public List<WasiMethodInputParameter> Params { get; set; } = new List<WasiMethodInputParameter>();
-
-        public ITypeSymbol ReturnType { get; set; }
-
-        public string FullyQualifiedMethodName => $"{Namespace}.{Class}::{Name}";
-    }
-
-    class WasiMethodInputParameter
-    {
-        public string Ident { get; set; }
-
-        public ITypeSymbol TypeSymbol { get; set; }
-
-        public bool IsArray => TypeSymbol.TypeKind == TypeKind.Array;
-        public bool IsClass => TypeSymbol.TypeKind == TypeKind.Class;
-        public bool IsStruct => TypeSymbol.TypeKind == TypeKind.Struct;
-        public bool IsInterface => TypeSymbol.TypeKind == TypeKind.Interface;
-        public string TypeIdent => TypeSymbol.Name.ToLowerInvariant();
-        public string CIdent => this.Ident.ToLowerSnakeCase();
-
-        public bool NeedsTransform 
-            => Generator.CTransformTemplates.ContainsKey(TypeSymbol.Name.ToString().ToLower());
-
-        public bool NeedsCleanup 
-            => Generator.CCleanupTemplates.ContainsKey(TypeSymbol.Name.ToString().ToLower());
-
-        public string CTransform
-        {
-            get
-            {
-                var typeName = TypeIdent; 
-                if (IsArray) { typeName = "array"; }
-                return string.Format(Generator.CTransformTemplates[TypeIdent], CIdent);
-            }
-        }
-
-        public string CParam {
-            get
-            {
-                // TODO: This feels a little dirty, can probs find something nicer to not check the dict twice
-                // Because a lot of built in types like 'string' are implemented as a class underwater
-                // check if the lowered type identifier is directly available in the param templates
-                // Otherwise check other object types to try to get the right type
-                var typeName = TypeIdent;
-                var hasCParam = Generator.CInputParam.TryGetValue(typeName, out var template);
-                if (hasCParam) { return string.Format(template, CIdent); }
-
-                if (IsArray) { typeName = "array"; }
-                else if (IsClass || IsInterface) { typeName = "object"; }
-                else if (IsStruct) { throw new NotSupportedException("Struct types are not supported as method parameters"); }
-
-                hasCParam = Generator.CInputParam.TryGetValue(typeName, out template);
-                if (!hasCParam) { throw new NotSupportedException($"Type {typeName} was is not supported as input parameter"); }
-
-                var formatted = string.Format(template, CIdent);
-                return formatted; 
-            }
-        }
-
-        public string CCleanup
-            => string.Format(Generator.CCleanupTemplates[TypeIdent], CIdent);
-    }
-
-    enum MethodType
-    {
-        Import,
-        Export
-    }
-
     [Generator]
     public class Generator : ISourceGenerator
     {
+        const string WasiExportAttributeName = "WasmExportAttribute";
+
+        const string WasiImportAttributeName = "WasmImportAttribute";
 
         internal static Dictionary<string, string> CInputParam = new Dictionary<string, string>()
         {
@@ -114,9 +35,6 @@ namespace Wasm.SourceGen.Analyzers
             { "array", "MonoArray* {0}_dotnet_array = {0}_ptr ? mono_wasm_typed_array({0}_ptr, {0}_len) : NULL" }
         };
 
-        const string WasiExportAttributeName = "ExportAttribute";
-
-        const string WasiImportAttributeName = "ImportAttribute";
 
         class WasiMethodSyntaxReceiver : ISyntaxContextReceiver
         {
@@ -244,7 +162,7 @@ void attach_internal_calls() {{
             {
                 Directory.CreateDirectory(outputDir);
             }
-            File.WriteAllText(Path.Combine(outputDir, "interop.gen.c"), source); 
+            File.WriteAllText(Path.Combine(outputDir, "interop.bla.gen.c"), source); 
         }
 
         private string ExportPointer(GeneratorExecutionContext context, WasiMethod method)

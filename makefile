@@ -1,5 +1,5 @@
-.PHONY: run
-run: build-all
+.PHONY: run-example
+run-example:
 	dotnet run --project examples/host-wasmtime/host-wasmtime.csproj
 
 .PHONY: build-all
@@ -12,10 +12,10 @@ build-example: guest host
 build: genlib gen
 
 genlib:
-	dotnet build Wasm.SourceGen
+	dotnet build Wasm.SourceGen --configuration release
 gen: 
-	dotnet build Wasm.SourceGen.Analyzers
+	dotnet build Wasm.SourceGen.Analyzers --no-incremental --configuration release
 guest: 
-	dotnet build examples/guest/guest.csproj --no-incremental
+	dotnet build examples/guest/guest.csproj --no-incremental --configuration release
 host: 
-	dotnet build examples/host-wastmtime/host-wasmtime.csproj
+	dotnet build examples/host-wastmtime/host-wasmtime.csproj --configuration release

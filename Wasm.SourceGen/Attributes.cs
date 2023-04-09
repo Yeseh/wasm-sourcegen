@@ -1,11 +1,11 @@
 ﻿namespace Wasm.SourceGen;
 
 [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-public class ExportAttribute : Attribute
+public class WasmExportAttribute : Attribute
 {
     public string Function { get;  }
 
-    public ExportAttribute(string functionName)
+    public WasmExportAttribute(string functionName)
     {
         this.Function = functionName;
         
@@ -17,13 +17,13 @@ public class ExportAttribute : Attribute
 }
 
 [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-public class ImportAttribute : Attribute
+public class WasmImportAttribute : Attribute
 {
     public string Module { get; }
 
     public string Function { get;  }
 
-    public ImportAttribute(string module, string functionName)
+    public WasmImportAttribute(string module, string functionName)
     {
         this.Module = module;
         this.Function = functionName;

@@ -10,14 +10,14 @@ partial class Program
         Console.WriteLine("Hello from _start!");
     }
 
-    [Export("hello")]
+    [WasmExport("hello")]
     public static int HelloFrom()
     {
         Console.WriteLine("Hello from WASI");
         return 1;
     }
     
-    [Export("string_param")]
+    [WasmExport("string_param")]
     public static int StringParam(string name)
     {
         Console.WriteLine($"Hello {name}, from WASI");
@@ -29,6 +29,6 @@ public static class Interop
 {
 
     [MethodImpl(MethodImplOptions.InternalCall)]
-    [Import("env", "hello")]
+    [WasmImport("env", "hello")]
     public static extern void Hello();
 }
