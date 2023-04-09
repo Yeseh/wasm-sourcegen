@@ -21,18 +21,4 @@
     <WasiAfterRuntimeLoaded Include="attach_internal_calls" />
   </ItemGroup>
 
-   <PropertyGroup>
-    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <CompilerGeneratedFilesOutputPath>native</CompilerGeneratedFilesOutputPath>
-  </PropertyGroup>
-
-  <Target Name="CleanSourceGeneratedFiles" BeforeTargets="BeforeBuild" DependsOnTargets="$(BeforeBuildDependsOn)">
-    <RemoveDir Directories="native" />
-  </Target>
-
-  <ItemGroup>
-    <Compile Remove="native\**" />
-    <Content Include="native\**" />
-  </ItemGroup>
-
 </Project>

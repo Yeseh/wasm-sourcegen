@@ -3,14 +3,13 @@ using Microsoft.CodeAnalysis;
 
 namespace Wasm.SourceGen.Analyzers 
  {
-
     enum MethodType
     {
         Import,
         Export
     }
 
-    class WasiMethod
+    class WasmMethod
     {
         public string Assembly { get; set; }
         public string Namespace { get; set; }
@@ -19,11 +18,9 @@ namespace Wasm.SourceGen.Analyzers
         public MethodType Type { get; set; }
         public string WasmModule { get; set; }
         public string WasmFunctionName{ get; set; }
-        public string WasmNamespace { get; set; }
-
         public bool IsStatic { get; set; }
 
-        public List<WasiMethodInputParameter> Params { get; set; } = new List<WasiMethodInputParameter>();
+        public List<WasmMethodParameter> Params { get; set; } = new List<WasmMethodParameter>();
 
         public ITypeSymbol ReturnType { get; set; }
 

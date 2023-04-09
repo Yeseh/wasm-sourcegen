@@ -4,7 +4,7 @@ using Microsoft.CodeAnalysis;
 namespace Wasm.SourceGen.Analyzers
 {
 
-    public class WasiMethodInputParameter
+    public class WasmMethodParameter
     {
         public string Ident { get; set; }
 
@@ -33,7 +33,8 @@ namespace Wasm.SourceGen.Analyzers
             }
         }
 
-        public string CParam {
+        public string CParam 
+        {
             get
             {
                 // TODO: This feels a little dirty, can probs find something nicer to not check the dict twice

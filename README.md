@@ -31,10 +31,10 @@ Not all types are currently supported, or will be supported. My goal is to get t
 For now only `string` works as function parameter, with `int` or `void` as return :)
 
 ### Exporting a function
-A function can be exposed by applying the `ExportAttribute` from `Wasm.SourceGen` to a static method:
+A function can be exposed by applying the `WasmExportAttribute` from `Wasm.SourceGen` to a static method:
 
 ```csharp
-[Export("hello")]
+[WasmExport("hello")]
 public static void Hello(string name)
 {
   Console.WriteLine($"Hello {name}, from WASI");
@@ -51,10 +51,10 @@ hello.Invoke(name);
 ```
 
 ### Importing a function
-A function can be imported from a WASM host by applying the `Wasm.SourceGen.ImportAttribute` to a `public static extern` method marked with `[MethodImpl(MethodImplOptions.InternalCall)]`:
+A function can be imported from a WASM host by applying the `Wasm.SourceGen.WasmImportAttribute` to a `public static extern` method marked with `[MethodImpl(MethodImplOptions.InternalCall)]`:
 ```csharp 
 [MethodImpl(MethodImplOptions.InternalCall)]
-[Import("env", "hello")]
+[WasmImport("env", "hello")]
 public static extern void Hello();
 ```
 
